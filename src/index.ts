@@ -22,34 +22,57 @@ async function* run() {
       yield true;
     }
     await mailManager.init(configManager.config);
-    const cmd = await input({ message: "请输入指令" });
-    switch (cmd) {
+    const cmdStr = await input({ message: "请输入指令" });
+    const cmdArr = cmdStr.split(" ");
+    switch (cmdArr[0]) {
       case "exit":
-        // console.clear();
         flag = false;
-        await mailManager.readMailManager.imap.closeBox((err) => {
-          console.log(err);
-          process.exit();
-        });
         yield false;
+        break;
       case "list":
         // console.clear();
         const list = await mailManager.readMailManager.getList();
-
-        const arr = Array.from(list).map((item) => {
+        // console.log(list);
+        const arr = list.map((item:any, index:number) => {
           return {
-            title: item.head.subject.join(","),
-            // fileList: item.head.fileList.length,
+            id: item.id,
+            title: item.head.Subject,
+            date: item.head.Date,
           };
         });
-        // console.log(list.map(item=>item))
         console.table(arr);
-        // console.log("===>", JSON.stringify(list,null,2));
         yield true;
+        break;
       case "connect":
-        // console.clear();
         await mailManager.init(configManager.config);
         yield true;
+      case "write":
+        const address = await input({ message: "请输入发送的邮箱地址:" });
+        const title = await input({ message: "请输入标题:" });
+        const content = await input({ message: "请输入内容:" });
+        await mailManager.writeMailManager.send(address, title, content);
+        console.log("发送成功");
+        yield true;
+        break;
+      case "read":
+        if (!cmdArr[1]) {
+          console.warn("请输入序号");
+          yield true;
+          break;
+        }
+        const mail = await mailManager.readMailManager.getMail(+cmdArr[1]);
+        console.log(mail.body);
+        yield true;
+        break;
+      case "clear":
+        console.clear();
+        await new Promise<void>((res) =>
+          setTimeout(() => {
+            res();
+          }, 100)
+        );
+        yield true;
+        break;
       default:
         yield true;
     }
